@@ -2,6 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import express from "express"; // "type": "module"
 import { MongoClient } from "mongodb";
+import contentRouter from "./router/content.router.js";
+import cors from "cors";
+
 const app = express();
 console.log(process.env.MONGO_URL);
 const PORT = 4001;
@@ -9,10 +12,11 @@ const PORT = 4001;
 //connect pandrom
 const MONGO_URL = process.env.MONGO_URL;
 // mongodb+srv://sethu:<password>@cluster0.czryasc.mongodb.net/?retryWrites=true&w=majority
-const client = new MongoClient(MONGO_URL);
+export const client = new MongoClient(MONGO_URL);
 await client.connect();
 console.log("Mongo is Connected");
 //connect end
+app.use(cors());
 //middleware
 app.use(express.json());
 
@@ -117,60 +121,5 @@ app.get("/", function (request, response) {
 //   },
 // ];
 
-app.get("/cms", async function (request, response) {
-  //db.movies.find({})
-  const content = await client.db("cmsbe").collection("cms").find({}).toArray();
-  console.log(content);
-  response.send(content);
-});
-
-app.get("/cms/:id", async function (request, response) {
-  const { id } = request.params;
-  console.log(id);
-  //db.cms.findOne({id: "100"})
-  const cm = await client.db("cmsbe").collection("cms").findOne({ id: id });
-  console.log(cm);
-  cm
-    ? response.send(cm)
-    : response.status(404).send({ message: "Content cannot found" });
-});
-
-//express.json() - middleware
-app.post("/cms", async function (request, response) {
-  const data = request.body;
-  //db.movies.insertMany(data)
-  console.log(data);
-  const result = await client.db("cmsbe").collection("cms").insertMany(data);
-  response.send(result);
-});
-
-app.delete("/cms/:id", async function (request, response) {
-  const { id } = request.params;
-  console.log(id);
-  //db.cms.deleteOne({id: "100"})
-  const result = await client
-    .db("cmsbe")
-    .collection("cms")
-    .deleteOne({ id: id });
-  console.log(result);
-  result.deletedCount >= 1
-    ? response.send({ message: "Content deleted successfully" })
-    : response.status(404).send({ message: "Content cannot found" });
-});
-
-//update
-app.put("/cms/:id", async function (request, response) {
-  const { id } = request.params;
-  const data = request.body;
-  console.log(data);
-  console.log(id);
-  //db.cms.updateOne({id: id}, {$set: data})
-  const result = await client
-    .db("cmsbe")
-    .collection("cms")
-    .updateOne({ id: id }, { $set: data });
-  console.log(result);
-  response.send(result);
-});
-
+app.use("/cms", contentRouter);
 app.listen(PORT, () => console.log(`The server started in: ${PORT}`));
